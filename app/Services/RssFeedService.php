@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Category;
+use App\Models\Story;
 use Exception;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -57,6 +58,7 @@ class RssFeedService
      */
     protected function validateRss(string $body): SimpleXMLElement
     {
+        Cache::put('crunchyroll_last_build_date', null);
         // Convierte el texto XML en un objeto SimpleXMLElement
         $xml = simplexml_load_string($body);
 
@@ -153,19 +155,25 @@ class RssFeedService
 
         foreach($xml->channel->item as $item) {
             // Obtenemos y limpiamos el título de la noticia
-            $title = trim((string)$item->$title);
+            $title = trim((string)$item->title);
 
             // Si el titulo de la noticia existe, se omite
             if (in_array($title, $processedNews, true)) {
                 continue;
             }
+            $namespaces = $item->getNamespaces(true);
 
-            $new = Story::firtOrCreate([
+            $new = Story::firstOrCreate([
                 'title' => $title,
-                'description' => (string)$item->$description,
-                'content' => (string)$item->$content,
-                'image_url' => (string)$item->$image_url,
-                'published_at' => (string)$item->$published_at,
+                'description' => (string)$item->description,
+                'content' => (string) $item
+                    ->children($namespaces['content'])
+                    ->encoded,
+                'image_url' => (string) $item
+                    ->children($namespaces['media'])
+                    ->thumbnail
+                    ->attributes()
+                    ->url,
                 'category_id' => Category::where('name', (string)$item->category)->first()->id,
             ]);
 
