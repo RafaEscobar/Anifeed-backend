@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use App\Models\Category;
 
 return new class extends Migration
 {
@@ -15,10 +16,9 @@ return new class extends Migration
             $table->id();
             $table->string('title');
             $table->string('description');
-            $table->string('content');
+            $table->text('content');
             $table->string('image_url');
-            $table->date('published_at');
-            $table->foreignId(Category::class)
+            $table->foreignIdFor(Category::class)
                 ->constrained('categories')
                 ->cascadeOnDelete();
             $table->timestamps();
