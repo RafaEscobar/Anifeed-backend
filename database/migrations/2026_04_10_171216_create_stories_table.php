@@ -17,7 +17,6 @@ return new class extends Migration
             $table->string('description');
             $table->string('content');
             $table->string('image_url');
-            $table->date('published_at');
             $table->foreignId(Category::class)
                 ->constrained('categories')
                 ->cascadeOnDelete();

@@ -43,6 +43,7 @@ class RssFeedService
 
         // Si todo está bien, sincroniza las categorías encontradas en el RSS
         $this->syncCategories($xml);
+        $this->syncNews($xml);
     }
 
     /**
@@ -96,10 +97,10 @@ class RssFeedService
      *
      * @param  SimpleXMLElement  $xml  RSS ya validado
      */
-    public function syncCategories(SimpleXMLElement $xml): void
+    protected function syncCategories(SimpleXMLElement $xml): void
     {
         // Guarda las categorías ya procesadas para no repetirlas
-        $categoriasProcesadas = [];
+        $processedCategories = [];
 
         // Recorre cada item del feed RSS
         foreach ($xml->channel->item as $item) {
@@ -117,12 +118,12 @@ class RssFeedService
             }
 
             // Si esta categoría ya fue procesada en esta misma ejecución, se omite
-            if (in_array($nombre, $categoriasProcesadas, true)) {
+            if (in_array($nombre, $processedCategories, true)) {
                 continue;
             }
 
             // Marca la categoría como procesada
-            $categoriasProcesadas[] = $nombre;
+            $processedCategories[] = $nombre;
 
             // Busca la categoría por nombre o la crea si no existe
             $categoria = Category::firstOrCreate([
@@ -131,10 +132,49 @@ class RssFeedService
 
             // Registra información útil sobre la categoría procesada
             Log::info('Categoría procesada', [
-                'name' => $categoria->name,
                 'id' => $categoria->id,
-                'created' => $categoria->wasRecentlyCreated,
+                'name' => $categoria->name,
             ]);
         }
     }
+
+
+    /**
+     * Recorre los items del RSS y guarda las noticias en la base de datos.
+     *
+     * Evita procesar noticias repetidas dentro del mismo RSS.
+     *
+     * @param  SimpleXMLElement  $xml  RSS ya validado
+     */
+    protected function syncNews(SimpleXMLElement $xml): void
+    {
+        // Guarda las noticias ya procesadas para no repetirlas
+        $processedNews = [];
+
+        foreach($xml->channel->item as $item) {
+            // Obtenemos y limpiamos el título de la noticia
+            $title = trim((string)$item->$title);
+
+            // Si el titulo de la noticia existe, se omite
+            if (in_array($title, $processedNews, true)) {
+                continue;
+            }
+
+            $new = Story::firtOrCreate([
+                'title' => $title,
+                'description' => (string)$item->$description,
+                'content' => (string)$item->$content,
+                'image_url' => (string)$item->$image_url,
+                'published_at' => (string)$item->$published_at,
+                'category_id' => Category::where('name', (string)$item->category)->first()->id,
+            ]);
+
+            // Registra información útil sobre la categoría procesada
+            Log::info('Noticia procesada', [
+                'name' => $item->name,
+                'id' => $item->id,
+            ]);
+        }
+    }
+
 }
