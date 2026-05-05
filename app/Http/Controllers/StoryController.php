@@ -20,8 +20,8 @@ class StoryController extends Controller
             ->when($request->has('date_to'), function ($q) use ($request) {
                 $q->whereDate('created_at', '<=', $request->date_to);
             })
-            ->when($request->has('tag'), function ($q) use ($request) {
-                $q->where('category_id', '==', $request->category);
+            ->when($request->has('category'), function ($q) use ($request) {
+                $q->where('category_id', '=', $request->category);
             })->paginate($request->input('limit', 20));
 
         return new StoryCollection($categories);

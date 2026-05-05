@@ -20,8 +20,11 @@ class StoryResource extends JsonResource
             'description' => $this->description,
             'content' => $this->content,
             'image_url' => $this->image_url,
-            'published_at' => $this->published_at,
-            'category_id' => $this->category_id,
+            'published_at' => $this->created_at->format('Y-m-d H:i:s'),
+            'category' => [
+                'id' => $this->category_id,
+                'label' => $this->category?->name
+            ],
         ];
     }
 }
